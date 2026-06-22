@@ -7,11 +7,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.vivek.orderprocessing.service.ListOrdersService;
+import org.vivek.orderprocessing.service.*;
 import org.vivek.orderprocessing.service.exception.InvalidOrderStatusException;
 import org.vivek.orderprocessing.service.exception.OrderNotFoundException;
-import org.vivek.orderprocessing.service.CreateOrderService;
-import org.vivek.orderprocessing.service.RetrieveOrderDetailsService;
 import org.vivek.orderprocessing.controller.dto.CreateOrderRequest;
 import org.vivek.orderprocessing.controller.dto.OrderDetailsResponse;
 import org.vivek.orderprocessing.controller.dto.OrderItemResponse;
@@ -27,8 +25,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -50,6 +47,12 @@ class OrderControllerTest {
 
     @MockBean
     private RetrieveOrderDetailsService retrieveOrderDetailsService;
+
+    @MockBean
+    private CancelOrderService cancelOrderService;
+
+    @MockBean
+    private UpdateOrderStatusService updateOrderStatusService;
 
     @Test
     void retrieveOrderDetailsReturnsOrderWithItems() throws Exception {
@@ -199,6 +202,42 @@ class OrderControllerTest {
         verifyNoInteractions(createOrderService);
     }
 
+    @Test
+    void cancelOrderReturnsNoContent() throws Exception {
+
+        mockMvc.perform(
+                        patch("/api/v1/orders/{orderId}/cancel", ORDER_ID)
+                )
+                .andExpect(status().isNoContent());
+
+        verify(cancelOrderService).cancel(ORDER_ID);
+    }
+
+    @Test
+    void updateStatusReturnsUpdatedOrder() throws Exception {
+
+        when(updateOrderStatusService.update(
+                eq(ORDER_ID),
+                eq(OrderStatus.SHIPPED)
+        )).thenReturn(shippedOrderResponse());
+
+        mockMvc.perform(
+                        patch("/api/v1/orders/{orderId}/status", ORDER_ID)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                {
+                                  "status": "SHIPPED"
+                                }
+                                """)
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("success"))
+                .andExpect(jsonPath("$.data.status").value("SHIPPED"));
+
+        verify(updateOrderStatusService)
+                .update(ORDER_ID, OrderStatus.SHIPPED);
+    }
+
     private OrderResponse orderResponse() {
         return new OrderResponse(
                 ORDER_ID,
@@ -236,6 +275,34 @@ class OrderControllerTest {
                         new BigDecimal("19.99"),
                         new BigDecimal("39.98")
                 ))
+        );
+    }
+
+    private OrderResponse shippedOrderResponse() {
+
+        return new OrderResponse(
+                ORDER_ID,
+                "Jane Doe",
+                "jane@example.com",
+                "SKU-123",
+                2,
+                new BigDecimal("19.99"),
+                new BigDecimal("39.98"),
+                OrderStatus.SHIPPED,
+                NOW,
+                NOW,
+                List.of(
+                        new OrderItemResponse(
+                                UUID.fromString(
+                                        "0e1c4e15-490b-4282-8543-fb26f868ed48"
+                                ),
+                                "SKU-123",
+                                "Keyboard",
+                                2,
+                                new BigDecimal("19.99"),
+                                new BigDecimal("39.98")
+                        )
+                )
         );
     }
 }
