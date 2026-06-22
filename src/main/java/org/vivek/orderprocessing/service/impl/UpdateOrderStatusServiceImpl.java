@@ -20,7 +20,7 @@ public class UpdateOrderStatusServiceImpl implements UpdateOrderStatusService {
     private final OrderRepository orderRepository;
     private final Clock clock;
 
-    UpdateOrderStatusServiceImpl(OrderRepository orderRepository, Clock clock){
+    public UpdateOrderStatusServiceImpl(OrderRepository orderRepository, Clock clock){
         this.orderRepository = orderRepository;
         this.clock = clock;
     }
