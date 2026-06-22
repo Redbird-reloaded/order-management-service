@@ -104,7 +104,14 @@ The application follows Hexagonal Architecture.
                     | JPA / PostgreSQL |
                     +------------------+
 ```
+### Architectural Goals
 
+The solution was designed with the following goals:
+
+- Separation of business logic from infrastructure concerns
+- Testability through dependency inversion
+- Maintainability through clear layer boundaries
+- Flexibility to replace persistence implementations without impacting domain logic
 ---
 
 # Package Structure
@@ -232,6 +239,8 @@ Rules:
 ---
 
 # Database Design
+
+The schema is managed through Flyway versioned migrations, ensuring consistent database initialization across local, test, and deployment environments.
 
 ## orders
 
@@ -372,6 +381,22 @@ mvn test
 
 ---
 
+# Testing Strategy
+
+The solution includes unit tests covering:
+
+- Order creation
+- Order retrieval
+- Order listing
+- Order cancellation
+- Order status updates
+- Scheduler behavior
+- Controller endpoints
+
+Mockito is used for service-layer testing and Spring MVC tests are used for controller validation.
+
+---
+
 # Design Decisions
 
 ## Why Hexagonal Architecture?
@@ -385,18 +410,25 @@ Benefits:
 
 ---
 
-## Why Soft Delete?
+## Why Status-Based Cancellation?
 
-The assignment requires order cancellation.
+The assignment requires support for order cancellation while preserving order history.
 
-Instead of physically deleting records, cancellation is represented through a state transition to CANCELLED.
+Instead of physically deleting records, cancellation is implemented as a domain state transition:
 
-Advantages:
+```text
+PENDING -> CANCELLED
+```
 
-* Preserves audit history.
-* Supports future reporting.
-* Enables operational investigations.
-* Aligns with real-world order management systems.
+Orders remain available for retrieval and reporting purposes, ensuring business history is preserved.
+
+Benefits:
+
+* Preserves auditability and traceability
+* Maintains historical order records
+* Supports operational investigations and reporting
+* Reflects how enterprise order management systems typically model cancellations
+* Avoids accidental loss of business data
 
 ---
 
