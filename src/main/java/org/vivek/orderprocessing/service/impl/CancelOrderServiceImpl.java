@@ -26,6 +26,5 @@ public class CancelOrderServiceImpl implements CancelOrderService {
                 new OrderNotFoundException(orderId));
         var cancelledOrder = order.cancel(Instant.now(clock));
         orderRepository.save(cancelledOrder);
-        //orderRepository.deleteById(orderId);
     }
 }
